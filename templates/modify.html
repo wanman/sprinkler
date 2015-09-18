@@ -8,6 +8,7 @@ $code:
 		return '%02d' % int(n)
 	
 	snames = gv.snames
+        # TODO new code passes in valid program always.  Dont think this pid<0 stuff needed here
 	if pid < 0:
 		program = [1, 127, 4, 360, 1080, 240, 900] # does not include station bytes(program[7+]. #dk
 		for brd in range(gv.sd['nbrd']): #dk
@@ -29,6 +30,9 @@ $code:
 				stationsOn = stationsOn + 1		 			
 	even = program[1]&0x80 and program[2]==0
 	odd = program[1]&0x80 and program[2]==1
+        # TODO this seems wrong.  It does not take into account 'seq' or not of the station execution.
+        # I think we want recurring to be driven off of program['cycle_min'] != 0, then fix prog_match
+        # to deal with 'cycle_min' == 0. -bdk
 	recurring = program[3] + program[6]/60*stationsOn < program[4]
 	tf = gv.sd['tf']
 	def formatTime(t):

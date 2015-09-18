@@ -342,30 +342,34 @@ def prog_match(prog):
     """
     Test a program for current date and time match.
     """
-    if not prog[0]:
+    if prog['enable'] != 'on':
         return 0  # Skip if program is not enabled
     devday = int(gv.now / 86400)  # Check day match
     lt = time.gmtime(gv.now)
-    if (prog[1] >= 128) and (prog[2] > 1):  # Interval program
-        if (devday % prog[2]) != (prog[1] - 128):
+    if (prog['type'] == 'interval'):  # Interval program
+        if (devday % prog['interval_base_day']) != prog['day_mask']):
             return 0
-    else:  # Weekday program
-        if not prog[1] - 128 & 1 << lt[6]:
+    elif prog['type'] == 'alldays':
+        if not prog['day_mask'] & 1 << lt[6]:
             return 0
-        if prog[1] >= 128 and prog[2] == 0:  # even days
-            if lt[2] % 2 != 0:
-                return 0
-        if prog[1] >= 128 and prog[2] == 1:  # Odd days
-            if lt[2] == 31 or (lt[1] == 2 and lt[2] == 29):
-                return 0
-            elif lt[2] % 2 != 1:
-                return 0
+    elif prog['type'] == 'evendays':
+        if lt[2] % 2 != 0:
+            return 0
+    elif prog['type'] == 'odddays':
+        if lt[2] == 31 or (lt[1] == 2 and lt[2] == 29):
+            return 0
+        elif lt[2] % 2 != 1:
+            return 0
+    else:
+        gv.logger.exception("unexpected program type: ' + prog['type'])
+        raise Exception('Unexpected program type')
+
     this_minute = (lt[3] * 60) + lt[4]  # Check time match
-    if this_minute < prog[3] or this_minute >= prog[4]:
+    if this_minute < prog['start_min'] or this_minute >= prog['stop_min']:
         return 0
-    if prog[5] == 0:
+    if prog['cycle_min'] == 0:
         return 0
-    if ((this_minute - prog[3]) / prog[5]) * prog[5] == this_minute - prog[3]:
+    if ((this_minute - prog['start_min']) / prog['cycle_min']) * prog['cycle_min'] == this_minute - prog['start_min']:
         return 1  # Program matched
     return 0
 
@@ -505,7 +509,35 @@ def load_programs():
     """
     try:
         with open('./data/programs.json', 'r') as pf:
-            gv.pd = json.load(pf)
+            progs = json.load(pf)
+            if len(progs) == 0:
+                gv.pd = progs
+                return gv.pd
+            if 'enable' not in progs[0]: # old style data?  Convert to new style
+                new_progs = []
+                for i in range(len(progs)):
+                    p_i = progs[i]
+                    new_prog['enable'] = 'on' if p_i[0] else 'off'
+                    new_prog['day_mask'] = p_i[1] & 0x7F
+                    new_prog['start_min'] = p_i[3]
+                    new_prog['stop_min'] = p_i[4]
+                    new_prog['cycle_min'] = p_i[5]
+                    new_prog['duration_sec'] = p_i[6]
+                    new_prog['station_mask'] = p_i[7:]
+                    if p_i[1] >= 128:
+                        if p_i[2] == 0:
+                            new_prog['type'] = 'evendays'
+                        elif p_i[2] == 1:
+                            new_prog['type'] = 'odddays'
+                        else:
+                            new_prog['type'] = 'interval'
+                            new_prog['interval_base_day'] = p_i[2]
+                    else:
+                        new_prog['type'] = 'alldays'
+                    new_progs.append(new_prog)
+                gv.pd = new_progs
+            else:
+                gv.pd = progs
     except IOError:
         gv.pd = []  # A config file -- return default and create file if not found.
         with open('./data/programs.json', 'w') as pf:
