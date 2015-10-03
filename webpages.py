@@ -104,7 +104,6 @@ class change_values(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        print 'qdict: ', qdict
         if 'rsn' in qdict and qdict['rsn'] == '1':
             stop_stations()
             raise web.seeother('/')
@@ -385,16 +384,24 @@ class modify_program(ProtectedPage):
     def GET(self):
         qdict = web.input()
         pid = int(qdict['pid'])
-        prog = []
         if pid != -1:
-            mp = gv.pd[pid][:]  # Modified program
-            if mp[1] >= 128 and mp[2] > 1:  # If this is an interval program
+            mp = gv.pd[pid]  # Modified program
+            if mp['type'] == 'interval':
                 dse = int(gv.now / 86400)
                 # Convert absolute to relative days remaining for display
-                rel_rem = (((mp[1] - 128) + mp[2]) - (dse % mp[2])) % mp[2]
-                mp[1] = rel_rem + 128  # Update from saved value.
-            prog = str(mp).replace(' ', '')
-        return template_render.modify(pid, prog)
+                rel_rem = (((mp['day_mask']) + mp['interval_base_day']) - (dse % mp['interval_base_day'])) % mp['interval_base_day']
+                mp['day_mask'] = rel_rem  # Update from saved value.
+        else:
+            mp['enable'] = 'on'
+            mp['type'] = 'alldays'
+            mp['day_mask'] = 127
+            mp['interval_base_day'] = 4 # necessary?
+            mp['start_min'] = 360 # 6AM
+            mp['stop_min'] = 1080 # 6PM
+            mp['cycle_min'] = 240 # 4 hours
+            mp['duration_sec'] = 900 # 01:30 mins
+            mp['station_mask'] = [0]*gv.sd['nbrd']
+        return template_render.modify(pid, mp)
 
 
 class change_program(ProtectedPage):
@@ -404,7 +411,7 @@ class change_program(ProtectedPage):
         qdict = web.input()
         pnum = int(qdict['pid']) + 1  # program number
         cp = json.loads(qdict['v'])
-        if cp[0] == 0 and pnum == gv.pon:  # if disabled and program is running
+        if cp['enable'] != 'on' and pnum == gv.pon:  # if disabled and program is running
             for i in range(len(gv.ps)):
                 if gv.ps[i][0] == pnum:
                     gv.ps[i] = [0, 0]
@@ -413,10 +420,10 @@ class change_program(ProtectedPage):
             for i in range(len(gv.rs)):
                 if gv.rs[i][3] == pnum:
                     gv.rs[i] = [0, 0, 0, 0]
-        if cp[1] >= 128 and cp[2] > 1:
+        if cp['type'] == 'interval':
             dse = int(gv.now / 86400)
-            ref = dse + cp[1] - 128
-            cp[1] = (ref % cp[2]) + 128
+            ref = dse + cp['day_mask']
+            cp['day_mask'] = (ref % cp['interval_base_day'])
         if qdict['pid'] == '-1':  # add new program
             gv.pd.append(cp)
         else:
@@ -434,7 +441,6 @@ class delete_program(ProtectedPage):
         qdict = web.input()
         if qdict['pid'] == '-1':
             del gv.pd[:]
-            jsave(gv.pd, 'programs')
         else:
             del gv.pd[int(qdict['pid'])]
         jsave(gv.pd, 'programs')
@@ -448,7 +454,7 @@ class enable_program(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        gv.pd[int(qdict['pid'])][0] = int(qdict['enable'])
+        gv.pd[int(qdict['pid'])]['enable'] = 'on' if int(qdict['enable']) else 'off' #maybe qdict enable just produce 'on' or 'off'
         jsave(gv.pd, 'programs')
         report_program_toggle()
         raise web.seeother('/vp')
@@ -482,19 +488,19 @@ class run_now(ProtectedPage):
 #           Sraise web.seeother('/vp')
         stop_stations()
         extra_adjustment = plugin_adjustment()
-        for b in range(len(p[7:7 + gv.sd['nbrd']])):  # check each station
+        for b in range(gv.sd['nbrd']):  # check each station
             for s in range(8):
                 sid = b * 8 + s  # station index
                 if sid + 1 == gv.sd['mas']:  # skip if this is master valve
                     continue
-                if p[7 + b] & 1 << s:  # if this station is scheduled in this program
+                if p['station_mask'][b] & 1 << s:  # if this station is scheduled in this program
                     gv.rs[sid][2] = p[6]
                     if not gv.sd['iw'][b] & 1 << s:
                         gv.rs[sid][2] = gv.rs[sid][2] * gv.sd['wl'] / 100 * extra_adjustment
                     gv.rs[sid][3] = pid + 1  # store program number in schedule
                     gv.ps[sid][0] = pid + 1  # store program number for display
                     gv.ps[sid][1] = gv.rs[sid][2]  # duration
-        schedule_stations(p[7:7 + gv.sd['nbrd']])
+        schedule_stations(p['station_mask'])
         raise web.seeother('/')
 
 
