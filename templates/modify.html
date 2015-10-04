@@ -9,18 +9,18 @@ $code:
 	snames = gv.snames
 	program = prog
 
-	weekly = program['type'] == 'weekly'
+	weekly = prog['type'] == 'weekly'
 	stationsShown = 0
 	stationsOn = 0
 	for bid in range(0, gv.sd['nbrd']):
 		boardShow = gv.sd['show'][bid]
 		for s in range(0,8):
 			stationsShown += (boardShow>>s) & 1
-			if program['station_mask'][bid]&(1<<s):
+			if prog['station_mask'][bid]&(1<<s):
 				stationsOn = stationsOn + 1		 			
-	even = program['type'] == 'even'
-	odd = program['type'] == 'odd'
-	recurring = bool(program['cycle_min'])
+	even = prog['type'] == 'even'
+	odd = prog['type'] == 'odd'
+	recurring = bool(prog['cycle_min'])
 	tf = gv.sd['tf']
 	def formatTime(t):
 		if gv.sd['tf']:
@@ -188,7 +188,7 @@ $code:
         });
         jQuery("#intervalSelector .intervalSelect").each(function() {
             var thisValue = parseInt(jQuery(this).text());
-            if (thisValue == prog[2]) {
+            if (thisValue == prog['interval_days']) {
                 jQuery(this).trigger("click");
                 jQuery("#intervalSelector").trigger("click");
             }
@@ -276,12 +276,12 @@ $code:
     <div class="title">${_("Edit Program #") + str(pid+1) if (pid>-1) else _("Add a New Program")}</div>
     <form name="mf" id="mf" action="${app_path('/cp')}" method="get">
         <input type="hidden" name="pid" value="${pid}">
-        <input type="hidden" name="v" value="$:{program}">
+        <input type="hidden" name="v" value="$:{prog}">
         <div style="padding-left:5px;padding-right:5px;">
-            <p><button id="cProgramEnabled" class="toggle ${'on' if program['enable'] else 'off'}"><span class='toggleleft'>$_('Program On')</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>$_('Program Off')</span></button></p>
+            <p><button id="cProgramEnabled" class="toggle ${'on' if prog['enable'] else 'off'}"><span class='toggleleft'>$_('Program On')</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>$_('Program Off')</span></button></p>
             <div class="controlBlock">
                 <p>
-                $ t = formatTime(two_digits(program['start_min']/60) + ":" + two_digits(program['start_min']%60))
+                $ t = formatTime(two_digits(prog['start_min']/60) + ":" + two_digits(prog['start_min']%60))
                     <b>$_('Start Time'):</b> <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tsh" value="${t.split(":")[0]}"> :
                     <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tsm" value="${t.split(":")[1][0:2]}">
                 $if tf:
@@ -292,14 +292,14 @@ $code:
                         <option ${"selected" if t.find("pm")>=0 else ""}>PM</option>
                     </select>
                 </p>
-                <p><b>$_('Duration'):</b> <input class="timeInput numbersOnly" type="text" size="2" maxlength="3" id="tdm" value="${two_digits(program['duration_sec']/60)}"> :
-                <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tds" value="${two_digits(program['duration_sec']%60)}"> (mm:ss)</p>
+                <p><b>$_('Duration'):</b> <input class="timeInput numbersOnly" type="text" size="2" maxlength="3" id="tdm" value="${two_digits(prog['duration_sec']/60)}"> :
+                <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tds" value="${two_digits(prog['duration_sec']%60)}"> (mm:ss)</p>
                 <p><button id="cRecurring" class="toggle choice ${'off' if recurring else 'on'}"><span class='toggleleft'>$_('Single pass')</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>$_('Recurring')</span></button></p>
                 <div id="recurr" $:{"" if recurring else "style='display:none'"}>
-                    <p><b>$_('Every'):</b> <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tih" value="${two_digits(program['cycle_min']/60)}"> :
-                    <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tim" value="${two_digits(program['cycle_min']%60)}"> (hh:mm)</p>
+                    <p><b>$_('Every'):</b> <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tih" value="${two_digits(prog['cycle_min']/60)}"> :
+                    <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tim" value="${two_digits(prog['cycle_min']%60)}"> (hh:mm)</p>
                     <p>
-                    $ t = formatTime(two_digits(program['stop_min']/60) + ":" + two_digits(program['stop_min']%60))
+                    $ t = formatTime(two_digits(prog['stop_min']/60) + ":" + two_digits(prog['stop_min']%60))
                         <b>$_('Until'):</b> <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="teh" value="${t.split(":")[0]}"> :
                         <input class="timeInput numbersOnly" type="text" size="2" maxlength="2" id="tem" value="${t.split(":")[1][0:2]}">
                     $if tf:
@@ -323,13 +323,13 @@ $code:
                 </tr>
                 <tr class="showWeekly" $:{"" if weekly else "style='display:none'"}>
                     <td colspan="2"></td>
-                    <td><button id="day0" class="weekday pushon ${"on" if program['day_mask']&(1<<0) else "off"}">$_('Monday')</button></td>
-                    <td><button id="day1" class="weekday pushon ${"on" if program['day_mask']&(1<<1) else "off"}">$_('Tuesday')</button></td>
-                    <td><button id="day2" class="weekday pushon ${"on" if program['day_mask']&(1<<2) else "off"}">$_('Wednesday')</button></td>
-                    <td><button id="day3" class="weekday pushon ${"on" if program['day_mask']&(1<<3) else "off"}">$_('Thursday')</button></td>
-                    <td><button id="day4" class="weekday pushon ${"on" if program['day_mask']&(1<<4) else "off"}">$_('Friday')</button></td>
-                    <td><button id="day5" class="weekday pushon ${"on" if program['day_mask']&(1<<5) else "off"}">$_('Saturday')</button></td>
-                    <td><button id="day6" class="weekday pushon ${"on" if program['day_mask']&(1<<6) else "off"}">$_('Sunday')</button></td>
+                    <td><button id="day0" class="weekday pushon ${"on" if prog['day_mask']&(1<<0) else "off"}">$_('Monday')</button></td>
+                    <td><button id="day1" class="weekday pushon ${"on" if prog['day_mask']&(1<<1) else "off"}">$_('Tuesday')</button></td>
+                    <td><button id="day2" class="weekday pushon ${"on" if prog['day_mask']&(1<<2) else "off"}">$_('Wednesday')</button></td>
+                    <td><button id="day3" class="weekday pushon ${"on" if prog['day_mask']&(1<<3) else "off"}">$_('Thursday')</button></td>
+                    <td><button id="day4" class="weekday pushon ${"on" if prog['day_mask']&(1<<4) else "off"}">$_('Friday')</button></td>
+                    <td><button id="day5" class="weekday pushon ${"on" if prog['day_mask']&(1<<5) else "off"}">$_('Saturday')</button></td>
+                    <td><button id="day6" class="weekday pushon ${"on" if prog['day_mask']&(1<<6) else "off"}">$_('Sunday')</button></td>
                 </td>
                 $ firstTime = True
                 $for bid in range(0, gv.sd['nbrd']):
@@ -338,14 +338,14 @@ $code:
                         $ sn = sid + 1
                         $ show = (gv.sd['show'][bid]>>s)&1
                         $if show == 1 and sn != gv.sd['mas']:
-                            $ stationEnabled = program['station_mask'][bid]&(1<<s)
+                            $ stationEnabled = prog['station_mask'][bid]&(1<<s)
                             <tr>
                                 <td class='station_name'>${snames[sid]}</td>
                                 <td>
                                     <button id="station${sid}" class='station toggle narrow ${'on' if stationEnabled else 'off'}'><span class='toggleleft'>$_('On')</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>$_('Off')</span></button>
                                 </td>
                                 $for d in range(0,7):
-                                    $ status = ("stationOn" if stationEnabled else "") + (" dayOn" if program['day_mask']&(1<<d) else "")
+                                    $ status = ("stationOn" if stationEnabled else "") + (" dayOn" if prog['day_mask']&(1<<d) else "")
                                     <td class="showWeekly stationState ${status} station${sid} day${d}" $:{"" if weekly else "style='display:none'"}></td>
                                 $if firstTime:
                                     <td class="showInterval" $:{"style='display:none'" if weekly else ""} rowspan="${stationsShown}">
@@ -371,7 +371,7 @@ $code:
                                                 <span class="intervalSelect distance0">0</span>
                                                 <span class="intervalSelect distance1">1</span>
                                             $else:
-                                                <span class="intervalSelect distance0">${program['day_mask']&0x7F}</span>
+                                                <span class="intervalSelect distance0">${prog['day_mask']&0x7F}</span>
                                         </div>
                                     </td>
                                     $ firstTime = False
