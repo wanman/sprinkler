@@ -9,13 +9,12 @@ $code:
     def two_digits(n):
         return '%02d' % int(n)
     
-    def pdays(days, dayInterval):
+    def pdays(prog_type, days, interval_days): #  days = prog[1]/prog['day_mask'], dayInterval = prog[2]/prog['interval_days']
         output = ""
-        if (days&0x80) and (dayInterval>1): # this is an interval program
-            days = days&0x7f
+        if prog_type == 'interval':
             dse = int(gv.now/86400) # days since epoc
-            daysRemaining = ((days + dayInterval)-(dse % dayInterval)) % dayInterval
-            output += _("Every ") + str(dayInterval) + " " + _("days")
+            daysRemaining = ((days + interval_days)-(dse % interval_days)) % interval_days
+            output += _("Every ") + str(interval_days) + " " + _("days")
             if daysRemaining:
                 output += ", " + _('starting in') + " " + str(daysRemaining) + " " + _('days') + "."
         else: # this is a weekly program 
@@ -24,10 +23,10 @@ $code:
             else:
                 for d in range(0,7):
                     if days & (1<<d):
-                        output += " " + [_("Mon"),_("Tue"),_("Wed"),_("Thur"),_("Fri"),_("Sat"),_("Sun")][d]
-        if (days&0x80) and (dayInterval==0):
+                        output += " " + [_("Mon"),_("Tue"),_("Wed"),_("Thur"),_("Fri"),_("Sat"),_("Sun")][d]        #if (days&0x80) and (interval_days==0):
+        if prog_type == 'even':
             output += _(' (Even days only)')
-        if (days&0x80) and (dayInterval==1):
+        if prog_type == 'odd':
             output += _(' (Odd days only)')
         return output
 
@@ -112,24 +111,24 @@ $code:
 <div id="programs">
     $for pid in range(0,nprogs):
         $ prog = gv.pd[pid]
-        <div id="p${pid}" class="controlBlock program ${'disabled' if prog[0] == 0 else ''}">
+        <div id="p${pid}" class="controlBlock program ${'disabled' if not prog['enable'] else ''}">
          <p>
-             <button class="cDisable toggle ${'off' if prog[0] == 0 else 'on'}" data="${pid}">
+             <button class="cDisable toggle ${'off' if not prog['enable'] else 'on'}" data="${pid}">
                  <span class='toggleleft'>$_('On')</span>
                  <span class='togglesep'>&nbsp;</span>
                  <span class='toggleright'>$_('Off')</span>
              </button>
-        $_('Program') ${pid+1}: <span class="val">${pdays(prog[1], prog[2])}</span></b>
+         $_('Program') ${str(pid+1)+" "+prog['name']}: <span class="val">${pdays(prog['type'], prog['day_mask'], prog['interval_days'])}</span></b>
          </p>
-            $ start = prog[3]
-            $ end = prog[4]
-            $ interval = prog[5]
-            $ duration = prog[6]
+            $ start = prog['start_min']
+            $ end = prog['stop_min']
+            $ interval = prog['cycle_min']
+            $ duration = prog['duration_sec']
             <p class="stationList">$_('Run'):
             $ stationsOn = 0
             $for bid in range(0,gv.sd['nbrd']):
                 $if len(prog) >= 8 + bid:
-                    $ bits = prog[7 + bid]
+                    $ bits = prog['station_mask'][bid]
                 $else:
                     $ bits = 0
                 $for s in range(0,8):
@@ -140,7 +139,7 @@ $code:
             </p>
             <p>$_('Starting'): <span class="val">${formatTime(two_digits(start/60) + ":" + two_digits(start%60))}</span>
             $_('for') <span class="val">${(duration/60>>0)}</span> mins<span class="val">${"" if (duration%60) == 0 else (" " + str(duration%60) + " secs")}</span></p>
-            $ recurring = start + duration/60*stationsOn < end
+            $ recurring = bool(prog['cycle_min'])
             $if recurring:
                 <p>$_('Recurring every')</b> <span class="val">${two_digits(interval/60)}</span> hrs <span class="val">${two_digits(interval%60)}</span> mins
                 $_('until') <span class="val">${formatTime(two_digits(end/60) + ":" + two_digits(end%60))}</span></p>

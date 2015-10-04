@@ -342,12 +342,12 @@ def prog_match(prog):
     """
     Test a program for current date and time match.
     """
-    if prog['enable'] != 'on':
+    if prog['enable'] != 1:
         return 0  # Skip if program is not enabled
     devday = int(gv.now / 86400)  # Check day match
     lt = time.gmtime(gv.now)
     if (prog['type'] == 'interval'):  # Interval program
-        if (devday % prog['interval_base_day']) != prog['day_mask']):
+        if (devday % prog['interval_days']) != prog['day_mask']:
             return 0
     elif prog['type'] == 'alldays':
         if not prog['day_mask'] & 1 << lt[6]:
@@ -361,7 +361,7 @@ def prog_match(prog):
         elif lt[2] % 2 != 1:
             return 0
     else:
-        gv.logger.exception("unexpected program type: ' + prog['type'])
+        gv.logger.exception("unexpected program type: " + prog['type'])
         raise Exception('Unexpected program type')
 
     this_minute = (lt[3] * 60) + lt[4]  # Check time match
@@ -510,14 +510,16 @@ def load_programs():
     try:
         with open('./data/programs.json', 'r') as pf:
             progs = json.load(pf)
+#            print 'progs from helpers: ', progs
             if len(progs) == 0:
                 gv.pd = progs
                 return gv.pd
             if 'enable' not in progs[0]: # old style data?  Convert to new style
                 new_progs = []
+                new_prog = {}
                 for i in range(len(progs)):
                     p_i = progs[i]
-                    new_prog['enable'] = 'on' if p_i[0] else 'off'
+                    new_prog['enable'] = 1 if p_i[0] else 0
                     new_prog['day_mask'] = p_i[1] & 0x7F
                     new_prog['start_min'] = p_i[3]
                     new_prog['stop_min'] = p_i[4]
@@ -531,7 +533,7 @@ def load_programs():
                             new_prog['type'] = 'odddays'
                         else:
                             new_prog['type'] = 'interval'
-                            new_prog['interval_base_day'] = p_i[2]
+                            new_prog['interval_days'] = p_i[2]
                     else:
                         new_prog['type'] = 'alldays'
                     new_progs.append(new_prog)

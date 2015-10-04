@@ -77,7 +77,7 @@ $code:
             var mas = ${gv.sd['mas']};
             var nbrd = ${gv.sd['nbrd']};
             var plugins = $:{gv.plugin_menu};
-            var progs = $:{gv.pd};
+            var progs = JSON.parse($:{"'" + json.dumps(gv.pd) + "'"});
             var nprogs = ${len(gv.pd)};
             var sdt = ${gv.sd['sdt']};
             var seq = ${gv.sd['seq']};

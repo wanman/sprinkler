@@ -7,12 +7,15 @@ import datetime
 import web
 import io
 import ast
+import json
 
 import gv
 from helpers import *
 from gpio_pins import set_output
 from sip import template_render
 from blinker import signal
+
+mp = {}
 
 loggedin = signal('loggedin')
 def report_login():
@@ -389,18 +392,21 @@ class modify_program(ProtectedPage):
             if mp['type'] == 'interval':
                 dse = int(gv.now / 86400)
                 # Convert absolute to relative days remaining for display
-                rel_rem = (((mp['day_mask']) + mp['interval_base_day']) - (dse % mp['interval_base_day'])) % mp['interval_base_day']
+                rel_rem = (((mp['day_mask']) + mp['interval_days']) - (dse % mp['interval_days'])) % mp['interval_days']
                 mp['day_mask'] = rel_rem  # Update from saved value.
         else:
-            mp['enable'] = 'on'
-            mp['type'] = 'alldays'
-            mp['day_mask'] = 127
-            mp['interval_base_day'] = 4 # necessary?
-            mp['start_min'] = 360 # 6AM
-            mp['stop_min'] = 1080 # 6PM
-            mp['cycle_min'] = 240 # 4 hours
-            mp['duration_sec'] = 900 # 01:30 mins
-            mp['station_mask'] = [0]*gv.sd['nbrd']
+            mp = {} #  dk
+            mp["enable"] = 1
+            mp["type"] = "alldays"
+            mp["day_mask"] = 127
+            mp["interval_days"] = 0
+            mp["start_min"] = 360 # 6AM
+            mp["stop_min"] = 1080 # 6PM
+            mp["cycle_min"] = 240 # 4 hours
+            mp["duration_sec"] = 900 # 15 mins
+            mp["station_mask"] = [0]*gv.sd["nbrd"]
+            mp["name"] = "un-named"
+  #          print "mp: ", mp
         return template_render.modify(pid, mp)
 
 
@@ -408,10 +414,13 @@ class change_program(ProtectedPage):
     """Add a program or modify an existing one."""
 
     def GET(self):
+        global mp
+        #print "mp: ", mp
         qdict = web.input()
+        print "qdict: ", qdict
         pnum = int(qdict['pid']) + 1  # program number
         cp = json.loads(qdict['v'])
-        if cp['enable'] != 'on' and pnum == gv.pon:  # if disabled and program is running
+        if cp['enable'] != 1 and pnum == gv.pon:  # if disabled and program is running
             for i in range(len(gv.ps)):
                 if gv.ps[i][0] == pnum:
                     gv.ps[i] = [0, 0]
@@ -423,7 +432,7 @@ class change_program(ProtectedPage):
         if cp['type'] == 'interval':
             dse = int(gv.now / 86400)
             ref = dse + cp['day_mask']
-            cp['day_mask'] = (ref % cp['interval_base_day'])
+            cp['day_mask'] = (ref % cp['interval_days'])
         if qdict['pid'] == '-1':  # add new program
             gv.pd.append(cp)
         else:
