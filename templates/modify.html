@@ -257,12 +257,25 @@ $code:
                 return;
             }
 
-            var v = "[" + en + "," + days + "," + dayInterval + "," + startTime + "," + endTime + "," + interval + "," + duration;
-            for (var i=0; i<nbrd; i++) {
-                v += "," + stations[i];
-            }
-            v += "]";
-            jQuery("form#mf input[name='v']").val(v);
+			var v = {};
+			v['type'] = 'alldays';
+			v['enable'] = en;
+			v['day_mask'] = days;
+			v['interval_days'] = 0;
+			v['start_min'] = startTime;
+			v['stop_min'] = endTime;
+			v['cycle_min'] = interval;
+			v['duration_sec'] = duration;
+	        var stn = [stations[0]] ;
+			for (var i=1; i<nbrd; i++) {
+	        	 stn += "," + stations[i];
+	     	}
+			//console.log(stn)
+			v['station_mask'] = stn;
+			v['name'] = 'un-named';
+			var vs = JSON.stringify(v);
+			console.log(vs)
+            jQuery("form#mf input[name='v']").val(vs);
             jQuery("form#mf").submit();
         });
         jQuery("button#cCancel").click(function(){
