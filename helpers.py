@@ -477,8 +477,7 @@ def read_log():
 def jsave(data, fname):
     """
     Save data to a json file.
-    
-    
+
     """
     with open('./data/' + fname + '.json', 'w') as f:
         json.dump(data, f)
@@ -488,9 +487,9 @@ def station_names():
     """
     Load station names from /data/stations.json file if it exists
     otherwise create file with defaults.
-    
+
     Return station names as a list.
-    
+
     """
     try:
         with open('./data/snames.json', 'r') as snf:
@@ -510,7 +509,6 @@ def load_programs():
     try:
         with open('./data/programs.json', 'r') as pf:
             progs = json.load(pf)
-#            print 'progs from helpers: ', progs
             if len(progs) == 0:
                 gv.pd = progs
                 return gv.pd
@@ -538,6 +536,8 @@ def load_programs():
                         new_prog['type'] = 'alldays'
                     new_progs.append(new_prog)
                 gv.pd = new_progs
+                with open('./data/programs.json', 'w') as pf:
+                    json.dump(gv.pd, pf)
             else:
                 gv.pd = progs
     except IOError:
