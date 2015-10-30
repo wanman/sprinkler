@@ -524,7 +524,10 @@ def load_programs():
                     new_prog['cycle_min'] = p_i[5]
                     new_prog['duration_sec'] = p_i[6]
                     new_prog['station_mask'] = p_i[7:]
-                    if p_i[1] >= 128:
+                    new_prog['interval_days'] = ""
+                    new_prog['name'] = 'un-named'
+#                    if p_i[1] >= 128:
+                    if p_i[2] > 1: #  interval enabled
                         if p_i[2] == 0:
                             new_prog['type'] = 'evendays'
                         elif p_i[2] == 1:
