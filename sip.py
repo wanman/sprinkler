@@ -22,6 +22,9 @@ from gpio_pins import set_output
 # if gv.use_gpio_pins is False (which is set in relay board plugin.
 # set_output()
 
+logging.disable(logging.CRITICAL) #  Disable error logging.
+
+
 def timing_loop():
     """ ***** Main timing algorithm. Runs in a separate thread.***** """
     try:
@@ -214,16 +217,24 @@ if __name__ == '__main__':
 
     #########################################################
     #### Code to import all webpages and plugin webpages ####
+    
 
     import plugins
+    
+    try:
+        print _('plugins loaded:')
+    except Exception:
+        pass
+    for name in plugins.__all__:
+        print ' ', name
 
     try:
         gv.logger.info(_('plugins loaded:'))
     except Exception:
         pass
 
-    for name in plugins.__all__:
-        gv.logger.info(name)
+#     for name in plugins.__all__:
+#         gv.logger.info(name)
 
     gv.plugin_menu.sort(key=lambda entry: entry[0])
 

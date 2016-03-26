@@ -463,7 +463,8 @@ class enable_program(ProtectedPage):
 
     def GET(self):
         qdict = web.input()
-        gv.pd[int(qdict['pid'])]['enable'] = 'on' if int(qdict['enable']) else 'off' #maybe qdict enable just produce 'on' or 'off'
+        print 'from enable_program: ', qdict
+        gv.pd[int(qdict['pid'])]['enable'] = int(qdict['enable'])       
         jsave(gv.pd, 'programs')
         report_program_toggle()
         raise web.seeother('/vp')
@@ -503,7 +504,7 @@ class run_now(ProtectedPage):
                 if sid + 1 == gv.sd['mas']:  # skip if this is master valve
                     continue
                 if p['station_mask'][b] & 1 << s:  # if this station is scheduled in this program
-                    gv.rs[sid][2] = p[6]
+                    gv.rs[sid][2] = p['duration_sec']
                     if not gv.sd['iw'][b] & 1 << s:
                         gv.rs[sid][2] = gv.rs[sid][2] * gv.sd['wl'] / 100 * extra_adjustment
                     gv.rs[sid][3] = pid + 1  # store program number in schedule

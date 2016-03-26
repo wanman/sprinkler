@@ -11,25 +11,25 @@ function scheduledThisDate(pd,simminutes,simdate) { // check if progrm is schedu
   // simdate is a JavaScript date object
   simday = Math.floor(simdate/(1000*3600*24)) // The number of days since epoc
   var wd,dn,drem; // week day, Interval days, days remaining
-  if(pd[0]==0)  return 0; // program not enabled, do not match
-  if ((pd[1]&0x80)&&(pd[2]>1)) {  // if interval program...  
-    if(((simday)%pd[2])!=(pd[1]&0x7f)) return 0; // remainder checking ##############	
+  if (!pd['enable'])  return 0; // program not enabled, do not match
+  if (pd['type'] == 'interval') {  // if interval program...  
+    if(((simday)%pd['interval_days'])!=(pd['day_mask']&0x7f)) return 0; // remainder checking ##############	
   } else {
     wd=(simdate.getDay()+6)%7; // getDay assumes sunday is 0, converts to Monday to 0 (weekday index)
-    if((pd[1]&(1<<wd))==0)  return 0; // weekday checking
+    if(pd['day_mask']&(1<<wd)==0)  return 0; // weekday checking
     dt=simdate.getDate(); // set dt = day of the month
-    if((pd[1]&0x80)&&(pd[2]==0)) { // even day checking...
-      if(dt%2) return 0; // if odd day (dt%2 == 1), no not match
+    if(pd['type'] == 'evendays') { // even day checking...
+      if(dt%2) return 0; // if odd day (dt%2 == 1), do not match
     }
-    if((pd[1]&0x80)&&(pd[2]==1))  { // odd day checking...
+    if(pd['type'] == 'odddays')  { // odd day checking...
       if(dt==31) return 0; // if 31st of month, do not match
       else if (dt==29 && simdate.getMonth()==1) return 0; // if leap year day, do not match
       else if (!(dt%2)) return 0; // if even day, do not match
     }
   }
-  if(simminutes<pd[3] || simminutes>=pd[4])  return 0; // if simulated time is before start time or after stop time, do not match
-  if(pd[5]==0)  return 0; // repeat time missing, do not match
-  if(((simminutes-pd[3])/pd[5]>>0)*pd[5] == (simminutes-pd[3])) { // if programmed to run now...
+  if(simminutes<pd['start_min'] || simminutes>=pd['stop_min'])  return 0; // if simulated time is before start time or after stop time, do not match
+  if(pd['cycle_min']==0)  return 0; // repeat time missing, do not match
+  if(((simminutes-pd['start_min'])/pd['cycle_min']>>0)*pd['cycle_min'] == (simminutes-pd['start_min'])) { // if programmed to run now...
     return 1; // scheduled for displayScheduleDate
   }
   return 0;  // no match found
@@ -52,13 +52,13 @@ function doSimulation() { // Create schedule by a full program simulation, was d
     endmin=0;
     match_found=0;
     for(pid=0;pid<nprogs;pid++) { //for each program
-      var pd=progs[pid]; //prog=program array, pd=program element at this index (program data)
+      var pd=progs[pid]; //progs=program list, pd=program dictionary element at this index (program data)
       if(scheduledThisDate(pd,simminutes,simdate)) { //call scheduledThisDate function, if scheduled...
         for(sid=0;sid<nst;sid++) { //for each station...
           bid=sid>>3;s=sid%8; //set board index (bid) and station number per board (s) from station index (sid) 
           if(mas==(sid+1)) continue; // skip master station
-          if(pd[7+bid]&(1<<s)) { // if this station is selected in this program...
-            et_array[sid]=pd[6]; // Set duration for this station to duration
+          if(pd['station_mask'][bid]&(1<<s)) { // if this station is selected in this program... !!!!! Check !!!!!
+            et_array[sid]=pd['duration_sec']; // Set duration for this station to duration
             if (iw[bid]&(1<<s) == 0) { // adjust duration by water level
               et_array[sid] *= wl/100*wlx/100;
             }

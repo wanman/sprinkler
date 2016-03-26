@@ -457,7 +457,7 @@ def stop_stations():
 
 def read_log():
     """
-    
+    Read run log date from file into a list.
     """
     result = []
     try:
