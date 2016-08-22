@@ -102,7 +102,7 @@ try:
             sd[key] = sd_temp[key]
 except IOError:  # If file does not exist, it will be created using defaults.
     with open('./data/sd.json', 'w') as sdf:  # save file
-        json.dump(sd, sdf)
+        json.dump(sd, sdf, indent=4, sort_keys=True)
 
 
 nowt = time.localtime()
@@ -116,6 +116,7 @@ output_srvals_lock = RLock()
 rovals = [0] * sd['nbrd'] * 7  # Run Once durations
 snames = station_names()  # Load station names from file
 pd = load_programs()  # Load program data from file
+# print 'pd: ', pd
 plugin_data = {}  # Empty dictionary to hold plugin based global data
 ps = []  # Program schedule (used for UI display)
 for i in range(sd['nst']):

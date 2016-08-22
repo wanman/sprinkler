@@ -480,7 +480,7 @@ def jsave(data, fname):
 
     """
     with open('./data/' + fname + '.json', 'w') as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=4, sort_keys=True)
 
 
 def station_names():

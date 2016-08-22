@@ -12,6 +12,10 @@ $code:
 	weekly = prog['type'] == 'alldays'
 	stationsShown = 0
 	stationsOn = 0
+	len_sm = len(prog['station_mask'])
+	len_sds = len(gv.sd['show'])
+	if len_sm < len_sds:
+		prog['station_mask'] += [0] * (len_sds - len_sm)
 	for bid in range(0, gv.sd['nbrd']):
 		boardShow = gv.sd['show'][bid]
 		for s in range(0,8):
@@ -197,6 +201,7 @@ $code:
         jQuery("button#cSubmit").click(function(){
             var days = 0, dayInterval = 0, i, s, sid;
             var en = jQuery("button#cProgramEnabled").hasClass("on") ? 1 : 0;
+            var pname = jQuery("#progName").val();
             // process days
             if (jQuery("button#cWeeklyInterval").hasClass("on")) {
                 for (i=0; i<7; i++) {
@@ -270,11 +275,10 @@ $code:
 			for (var i=1; i<nbrd; i++) {
 	        	 stn += "," + stations[i];
 	     	}
-			//console.log(stn)
 			v['station_mask'] = stn;
-			v['name'] = 'un-named';
+			v['name'] = pname;
 			var vs = JSON.stringify(v);
-			console.log(vs)
+			// console.log(vs)
             jQuery("form#mf input[name='v']").val(vs);
             jQuery("form#mf").submit();
         });
@@ -291,6 +295,7 @@ $code:
         <input type="hidden" name="pid" value="${pid}">
         <input type="hidden" name="v" value="$:{prog}">
         <div style="padding-left:5px;padding-right:5px;">
+        	<p><b>${_("Name")+ ": "}</b><input type="text" id="progName" value="$:{prog['name']}"></p>
             <p><button id="cProgramEnabled" class="toggle ${'on' if prog['enable'] else 'off'}"><span class='toggleleft'>$_('Program On')</span><span class='togglesep'>&nbsp;</span><span class='toggleright'>$_('Program Off')</span></button></p>
             <div class="controlBlock">
                 <p>
